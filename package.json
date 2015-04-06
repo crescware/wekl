@@ -4,7 +4,8 @@
   "description": "The utility and library for BPM, duration, second.",
   "main": "index.js",
   "scripts": {
-    "test": "mocha"
+    "test": "mocha",
+    "watch": "gulp watch"
   },
   "repository": {
     "type": "git",
@@ -21,7 +22,7 @@
   "author": "Crescware",
   "license": "MIT",
   "devDependencies": {
-    "babel": "^5.0.9",
+    "babel": "4.7.16",
     "browserify": "^9.0.7",
     "del": "^1.1.1",
     "dtsm": "^0.9.1",
