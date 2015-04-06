@@ -6,47 +6,60 @@ var seq = require('run-sequence');
 var shell = require('gulp-shell');
 
 var opt = {
-  dist:          './dist',
   lib:           './lib',
+  src:           './src',
   test:          './test',
   testEs5:       './test-es5',
   testEspowered: './test-espowered'
 };
 
 /* clean */
-gulp.task('clean:dist', del.bind(null, [
-  opt.dist
+gulp.task('clean:lib', del.bind(null, [
+  opt.lib
 ]));
 gulp.task('clean', del.bind(null, [
-  opt.lib + '/**/*.js',
-  opt.lib + '/**/*.js.map',
+  opt.src + '/**/*.js',
+  opt.src + '/**/*.js.map',
   opt.testEs5,
   opt.testEspowered
 ]));
 
 /* ts */
-var tsc = 'tsc -m commonjs -t es6 --noImplicitAny';
-gulp.task('ts:lib_', shell.task([`find ${opt.lib} -name *.ts | xargs ${tsc}`]));
-gulp.task('ts:lib',  function(done) {seq('clean', 'ts:lib_', done)});
-gulp.task('ts',      function(done) {seq('clean', ['ts:lib_', 'ts:example_'], done)});
+var tsc = 'tsc -t es6 --noEmitOnError --noImplicitAny';
+gulp.task('ts:src_', shell.task([`find ${opt.src} -name *.ts | xargs ${tsc}`]));
+gulp.task('ts:src',  function(done) {seq('clean', 'ts:src_', done)});
+gulp.task('ts',      function(done) {seq('clean', ['ts:src_', 'ts:example_'], done)});
 
 /* babel */
-gulp.task('babel:lib',  shell.task([`babel ${opt.lib}  --out-dir ${opt.lib}`]));
+gulp.task('babel:src',  shell.task([`babel ${opt.src}  --out-dir ${opt.src}`]));
 gulp.task('babel:test', shell.task([`babel ${opt.test} --out-dir ${opt.testEs5}`]));
-gulp.task('babel', ['babel:lib']);
+gulp.task('babel', ['babel:src']);
 
 /* watch */
-gulp.task('watch', ['test'], function() {
-  gulp.watch([`${opt.lib}/**/*.ts`], ['test']);
+gulp.task('exec-watch', ['test'], function() {
+  gulp.watch([`${opt.src}/**/*.ts`, `${opt.test}/**/*.es6`], ['test'])
+    .on('error', function(err) {
+      process.exit(1);
+    });
+});
+
+gulp.task('watch', function() {
+  var spawn = function() {
+    var proc = require('child_process').spawn('gulp', ['exec-watch'], {stdio: 'inherit'});
+    proc.on('close', function(c) {
+      spawn();
+    });
+  };
+  spawn();
 });
 
 /* build */
-gulp.task('copy:lib', function() {
-  gulp.src(`${opt.lib}/**/*.js`)
-    .pipe(gulp.dest(opt.dist));
+gulp.task('copy:src', function() {
+  gulp.src(`${opt.src}/**/*.js`)
+    .pipe(gulp.dest(opt.lib));
 });
-gulp.task('build:lib', function(done) {seq(['clean:dist', 'ts:lib'], 'babel:lib', 'copy:lib', done)});
-gulp.task('build',     function(done) {seq('build:lib', done)});
+gulp.task('build:src', function(done) {seq(['clean:lib', 'ts:src'], 'babel:src', 'copy:src', done)});
+gulp.task('build',     function(done) {seq('build:src', done)});
 
 /* test */
 gulp.task('espower', function() {
@@ -57,6 +70,10 @@ gulp.task('espower', function() {
 gulp.task('mocha', function() {
   return gulp.src(`${opt.testEspowered}/**/*.js`)
     .pipe(mocha({reporter: 'spec'}))
-    .pipe(gulp.dest(opt.testEspowered));
 });
-gulp.task('test', function(done) {seq('ts:lib_', ['babel:lib', 'babel:test'], 'espower', 'mocha', done)});
+gulp.task('test', function(done) {
+  seq('ts:src_', ['babel:src', 'babel:test'], 'espower', 'mocha', done)
+  .on('error', function(err) {
+    process.exit(1);
+  });
+});
