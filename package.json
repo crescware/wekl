@@ -1,0 +1,23 @@
+{
+  "name": "wekl",
+  "version": "0.0.1",
+  "description": "The utility and library for BPM, duration, second.",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "wekl"
+  },
+  "keywords": [
+    "music",
+    "BPM",
+    "duration",
+    "tempo",
+    "second",
+    "time"
+  ],
+  "author": "Crescware",
+  "license": "MIT"
+}
